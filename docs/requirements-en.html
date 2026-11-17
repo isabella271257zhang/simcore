@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project Requirements: simcore — A Reusable Simulation Core Library</title>
+<style>
+  body {
+    font-family: "Microsoft YaHei", "微软雅黑", "SimSun", serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #222;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  h1 {
+    font-size: 20pt;
+    border-bottom: 3px solid #2c3e50;
+    padding-bottom: 8px;
+    color: #2c3e50;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #2c3e50;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin-top: 28px;
+  }
+  h3 {
+    font-size: 12.5pt;
+    color: #34495e;
+    margin-top: 20px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0 18px 0;
+    font-size: 10pt;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 6px 9px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #e8eef4;
+    font-weight: bold;
+  }
+  tr:nth-child(even) td {
+    background-color: #f9fbfd;
+  }
+  code {
+    font-family: "Consolas", "Courier New", monospace;
+    background-color: #f2f2f2;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9.5pt;
+  }
+  pre {
+    font-family: "Consolas", "Courier New", monospace;
+    background-color: #f5f5f5;
+    border-left: 4px solid #3498db;
+    padding: 10px 14px;
+    overflow-x: auto;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  blockquote {
+    border-left: 4px solid #e67e22;
+    background-color: #fdf6ec;
+    margin: 14px 0;
+    padding: 10px 16px;
+    color: #555;
+  }
+  .frontmatter {
+    background-color: #f4f6f8;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin-bottom: 22px;
+  }
+  .frontmatter table {
+    margin: 6px 0;
+    border: none;
+  }
+  .frontmatter td {
+    border: none;
+    padding: 2px 8px;
+    background: none !important;
+  }
+  .frontmatter td:first-child {
+    font-weight: bold;
+    width: 140px;
+    color: #2c3e50;
+  }
+  strong { color: #1a252f; }
+</style>
+</head>
+<body>
+
+<h1>Project Requirements: simcore — A Reusable Simulation Core Library</h1>
+
+<div class="frontmatter">
+<table>
+  <tr><td>Project name</td><td>simcore</td></tr>
+  <tr><td>Project form</td><td>C++20 static/header-only library + example program + unit tests</td></tr>
+  <tr><td>Technology stack</td><td>C++20, CMake ≥ 3.20, GoogleTest (or Catch2), Doxygen</td></tr>
+  <tr><td>Team size</td><td>6 people (trim per section 8.3 for 2 people)</td></tr>
+  <tr><td>Document version</td><td>v1.0</td></tr>
+  <tr><td>Applicable rubric</td><td>published / documented / functional / innovative / teamwork (0–1 point each)</td></tr>
+</table>
+</div>
+
+<blockquote>
+<strong>Pre-confirmation items (must be completed before starting work)</strong><br>
+1. Confirm with the instructor: whether this course accepts a "library + example program" as the project form, rather than a single executable program.<br>
+2. Confirm with the instructor: whether the review of the innovative dimension requires a live demonstration of "third-party reuse".<br>
+3. If any confirmation result is inconsistent with the assumptions in this document, revise this document before starting work.
+</blockquote>
+
+<h2>1. Project Goals</h2>
+<p>This project delivers a <strong>simulation skeleton library independent of any specific domain</strong>, <code>simcore</code>. It is responsible for managing "which entities exist", "how time advances", and "how to access entities by type", but it <strong>does not prescribe the specific content of the simulation</strong>. Any course project that needs discrete-time-step simulation should be able to introduce <code>simcore</code> through <code>add_subdirectory</code> and run by writing only its own entity types.</p>
+<p><strong>Core design constraints (throughout this document):</strong></p>
+<ul>
+  <li><code>simcore</code> is a <strong>library</strong>, not an application. There is no "single main program" in the repository.</li>
+  <li>Adding an entity type is <strong>only allowed to modify the user's own files</strong>; no source code of <code>simcore</code> may be modified.</li>
+  <li>The public API must be stable, documented, and tested; the internal implementation may be adjusted freely.</li>
+</ul>
+
+<h2>2. Deliverable List</h2>
+<table>
+  <tr><th>ID</th><th>Deliverable</th><th>Location</th><th>Owner</th></tr>
+  <tr><td>D1</td><td>Public Git repository (public)</td><td>GitHub / GitLab</td><td>All members</td></tr>
+  <tr><td>D2</td><td>Library source <code>include/simcore/</code></td><td>Repository</td><td>Core development</td></tr>
+  <tr><td>D3</td><td>Example program <code>examples/particle_demo.cpp</code></td><td>Repository</td><td>Core development</td></tr>
+  <tr><td>D4</td><td>Unit tests <code>tests/</code></td><td>Repository</td><td>Test lead</td></tr>
+  <tr><td>D5</td><td>Doxygen documentation + handwritten guide <code>docs/guide.md</code></td><td>Repository + generated HTML</td><td>Documentation lead</td></tr>
+  <tr><td>D6</td><td>README (including build, usage, license)</td><td>Repository root</td><td>Documentation lead</td></tr>
+  <tr><td>D7</td><td>Live demonstration (including live addition of an entity)</td><td>Classroom</td><td>All members</td></tr>
+  <tr><td>D8</td><td>Demonstration slides (≤ 10 pages)</td><td>Classroom</td><td>All members</td></tr>
+</table>
+
+<h2>3. Functional Requirements</h2>
+
+<h3>3.1 Core Components (must implement)</h3>
+
+<h4>FR-1 Time Step Driver <code>Stepper</code></h4>
+<p>The following public interface must be provided (signatures may be fine-tuned; semantics must not change):</p>
+<pre><code>namespace simcore {
+class Stepper {
+public:
+    explicit Stepper(Registry&amp; reg);
+
+    // Advance with a fixed step; when duration is not an integer multiple of step, the final frame uses the remainder
+    void run(double duration, double fixed_step);
+
+    // Advance a single time step
+    void step(double dt);
+
+    // Current accumulated simulation time
+    [[nodiscard]] double elapsed() const noexcept;
+};
+}</code></pre>
+<p>Requirements:</p>
+<ul>
+  <li>Call each entity's <code>update(dt)</code> in registration order (or a user-specified priority).</li>
+  <li>Multi-threading is not supported; if extended later, the single-threaded semantics must remain unchanged.</li>
+</ul>
+
+<h4>FR-2 Entity Container and Lifetime <code>Registry</code></h4>
+<pre><code>namespace simcore {
+class Registry {
+public:
+    // Construct and register an entity of type T, returning a type-safe handle
+    template &lt;class T, class... Args&gt;
+    EntityHandle&lt;T&gt; spawn(Args&amp;&amp;... args);
+
+    // Request destruction; actual destruction is deferred until the current update loop ends and is then executed uniformly
+    template &lt;class T&gt;
+    void despawn(EntityHandle&lt;T&gt; h);
+
+    // Iterate by type
+    template &lt;class T&gt;
+    View&lt;T&gt; view();
+
+    std::size_t entity_count() const noexcept;
+};
+}</code></pre>
+<p>Requirements:</p>
+<ul>
+  <li>Use type erasure (<code>std::unique_ptr&lt;EntityBase&gt;</code> or an equivalent approach) to store heterogeneous entities.</li>
+  <li><code>despawn</code> must be deferred, ensuring that destroying an entity during a <code>view&lt;T&gt;()</code> traversal does not invalidate iterators or cause a crash. <strong>This behavior must be covered by unit tests.</strong></li>
+  <li>The template parameter <code>T</code> of <code>spawn</code> must satisfy that <code>update(dt)</code> is callable (constrained with a C++20 <code>concept</code>; see FR-4).</li>
+</ul>
+
+<h4>FR-3 Type-Safe View <code>View&lt;T&gt;</code></h4>
+<pre><code>template &lt;class T&gt;
+class View {
+public:
+    // Supports range-based for; during iteration, only entities of type T are produced
+    Iterator begin();
+    Iterator end();
+};</code></pre>
+<p>Requirement: <code>View&lt;T&gt;</code> traversal complexity is not required to be O(1) for locating, but the complexity of a single full traversal must not exceed O(N) (N is the total number of entities).</p>
+
+<h4>FR-4 Entity Concept Constraint</h4>
+<pre><code>template &lt;class T&gt;
+concept Entity = requires(T t, double dt) {
+    { t.update(dt) } -&gt; std::same_as&lt;void&gt;;
+};</code></pre>
+<p>Requirement: a type that does not satisfy <code>Entity</code> must produce a <strong>readable compile-time error</strong> at <code>spawn</code>, rather than a deep template error. An example of the error message must be given in the documentation.</p>
+
+<h4>FR-5 Aggregate Header</h4>
+<p><code>include/simcore/simcore.h</code> must expose all public APIs in one place, so that users only need <code>#include &lt;simcore/simcore.h&gt;</code>.</p>
+
+<h3>3.2 Example Program (must implement)</h3>
+<p><code>examples/particle_demo.cpp</code>:</p>
+<ul>
+  <li><strong>No more than 200 lines</strong> (including comments).</li>
+  <li>Define at least <strong>2</strong> different entity types (such as <code>Particle</code>, <code>BoundedBox</code>) to prove that heterogeneous entities coexist.</li>
+  <li>Demonstrate the four core APIs <code>spawn</code> / <code>despawn</code> / <code>view</code> / <code>run</code>.</li>
+  <li>Built through the CMake target <code>simcore_demo</code>, with no third-party dependency other than <code>simcore</code>.</li>
+  <li>After running, print a readable simulation summary to standard output (total time, changes in entity count, etc.).</li>
+</ul>
+
+<h3>3.3 Unit Tests (must implement)</h3>
+<p>At least the following cases must be covered under <code>tests/</code>, and all must be executed through <code>ctest</code>:</p>
+<table>
+  <tr><th>ID</th><th>Case</th><th>Assertion points</th></tr>
+  <tr><td>T1</td><td>Fixed-step advancement</td><td>Total duration matches <code>elapsed()</code>, error ≤ 1e-9</td></tr>
+  <tr><td>T2</td><td>Multiple entity types coexist</td><td><code>entity_count()</code> is correct; the <code>update</code> of both types is called</td></tr>
+  <tr><td>T3</td><td>Destruction during traversal</td><td>Calling <code>despawn</code> inside <code>view&lt;T&gt;()</code> does not crash; the entity count is correct after the loop ends</td></tr>
+  <tr><td>T4</td><td>Handle invalidation</td><td>The behavior of calling <code>despawn</code> on an already destroyed handle is defined (idempotent or assertion; choose one and document it)</td></tr>
+  <tr><td>T5</td><td>Concept constraint</td><td><code>spawn</code> of an illegal entity type fails to compile (may use <code>static_assert</code> or a compile-failure test)</td></tr>
+</table>
+<p>There is no hard threshold for coverage, but T1–T3 are <strong>mandatory</strong>; missing any of them means the FR is incomplete.</p>
+
+<h3>3.4 Optional Enhancements (do not affect acceptance; do them only with spare time)</h3>
+<ul>
+  <li>Type-safe event bus: <code>publish&lt;T&gt;()</code> / <code>subscribe&lt;T&gt;()</code>.</li>
+  <li><code>Stepper</code> supports priority ordering.</li>
+  <li>A simple performance benchmark (<code>bench/</code>) comparing per-step time with N=10⁵ entities.</li>
+</ul>
+
+<h2>4. Non-Functional Requirements</h2>
+<table>
+  <tr><th>ID</th><th>Requirement</th></tr>
+  <tr><td>NFR-1</td><td>Use only the C++20 standard library; introduce no third-party runtime dependency (test frameworks excepted)</td></tr>
+  <tr><td>NFR-2</td><td>Compile with zero warnings under GCC ≥ 11 and Clang ≥ 14 (<code>-Wall -Wextra -Wpedantic</code>)</td></tr>
+  <tr><td>NFR-3</td><td>Provide <code>.clang-format</code>; all submitted source code must be formatted</td></tr>
+  <tr><td>NFR-4</td><td>Use modern CMake (target-based): the library target exports the alias <code>simcore::simcore</code>, sets <code>target_include_directories</code> and <code>target_compile_features</code>, and does not use global <code>include_directories</code></td></tr>
+  <tr><td>NFR-5</td><td>The library can be consumed both through <code>add_subdirectory</code> and <code>find_package</code> (optional install rules)</td></tr>
+  <tr><td>NFR-6</td><td>The license file (MIT or as specified by the course) is placed in the repository root</td></tr>
+</table>
+
+<h2>5. Documentation Requirements</h2>
+
+<h3>5.1 Doxygen (mandatory)</h3>
+<ul>
+  <li>All <code>public</code> declarations must have <code>@brief</code>; interfaces with parameters/template parameters must have <code>@param</code> / <code>@tparam</code>.</li>
+  <li>Each public component must have at least one <code>@code</code> example.</li>
+  <li>Provide <code>docs/Doxyfile</code>; CMake provides the <code>doc</code> target, and running <code>cmake --build build --target doc</code> generates HTML.</li>
+  <li>The generated result is not required to be committed, but <strong>the generated page must be opened live during the demonstration</strong>.</li>
+</ul>
+
+<h3>5.2 Handwritten Guide <code>docs/guide.md</code> (mandatory)</h3>
+<p>Target reader: <strong>another course project group</strong>. The content must include:</p>
+<ol>
+  <li>A one-sentence explanation of what <code>simcore</code> is and what it does not do;</li>
+  <li>A five-minute quick start: the complete code from <code>add_subdirectory</code> to writing the first entity and running it;</li>
+  <li>The steps to add a new entity type (emphasizing "touch only your own files");</li>
+  <li>The meaning and resolution of common compile errors (covering at least the concept constraint failure in FR-4).</li>
+</ol>
+
+<h3>5.3 README (mandatory)</h3>
+<p>Must include: a one-paragraph project positioning, three lines of build commands, links to <code>docs/guide.md</code> and Doxygen, the license, and a description of the directory structure. Optional: a build status badge.</p>
+
+<h2>6. Git Collaboration Standards</h2>
+
+<h3>6.1 Branches and Merging</h3>
+<ul>
+  <li><code>main</code> is a protected branch; <strong>direct pushes are prohibited</strong>.</li>
+  <li>Each person branches <code>feature/&lt;name-pinyin&gt;-&lt;feature&gt;</code> from <code>main</code> and merges through a Pull Request when finished.</li>
+  <li>Each PR requires at least <strong>1 other member's Approve</strong> before merging (a formal review is sufficient, but a comment must be left).</li>
+  <li><code>push --force</code> to <code>main</code> is prohibited.</li>
+</ul>
+
+<h3>6.2 Commit Messages</h3>
+<p>Format: <code>&lt;type&gt;: &lt;short description&gt;</code>, <code>type ∈ {feat, fix, docs, test, build, refactor, chore}</code>.</p>
+<ul>
+  <li>Semantically empty messages such as <code>update</code>, <code>fix bug</code>, and <code>.</code> are prohibited.</li>
+  <li>Pushes of unfinished code must be prefixed with <code>WIP:</code> and squashed into clean commits before merging.</li>
+  <li><strong>Each member's commits must be distributed throughout the entire development cycle</strong>; concentrated commits in the final week are prohibited (this is a directly observed point of the <code>teamwork</code> score).</li>
+</ul>
+
+<h3>6.3 Minimum Collaboration Metrics</h3>
+<table>
+  <tr><th>Metric</th><th>Minimum requirement</th></tr>
+  <tr><td>Commits per member</td><td>≥ 8</td></tr>
+  <tr><td>PRs per member</td><td>≥ 2</td></tr>
+  <tr><td>Code review records</td><td>At least 1 comment from another person on each PR</td></tr>
+  <tr><td>Commit time span</td><td>Covers ≥ 70% of the development cycle</td></tr>
+</table>
+
+<h2>7. Demonstration Requirements</h2>
+<p>The duration is per course regulations (assumed 10–15 minutes). Divide the work along the following narrative line, <strong>not by mechanically splitting the time</strong>:</p>
+
+<h3>7.1 Member A — Positioning and Reusability Argument (about 3 minutes)</h3>
+<ul>
+  <li>Explain "why build a library instead of an application";</li>
+  <li>Show the abstraction boundary diagram (one slide is enough);</li>
+  <li>Open the Doxygen-generated documentation page to prove that the documentation is generated from source comments and stays in sync with the code.</li>
+</ul>
+
+<h3>7.2 Member B — Live Functionality Demonstration (about 5 minutes, <strong>key part</strong>)</h3>
+<ol>
+  <li>Build and run <code>simcore_demo</code>, and explain the meaning of the output;</li>
+  <li><strong>Create a new file live, write a minimal entity (3–5 lines), modify the demo's <code>main</code> to introduce the entity, then recompile and run successfully.</strong></li>
+  <li>State clearly: "Adding an entity modified only user files; <code>simcore</code> source code has zero changes."</li>
+</ol>
+<blockquote>Step 2 is <strong>mandatory</strong>. If the live compilation fails, both <code>functional</code> and <code>innovative</code> may be judged incomplete. Rehearse at least 3 times in advance and prepare an offline build environment (not dependent on live network access).</blockquote>
+
+<h3>7.3 Member C — Engineering and Collaboration (about 3 minutes)</h3>
+<ul>
+  <li>Open the repository's Insights / Network page to show the merge history of each member's branches;</li>
+  <li>Point out one specific PR and explain the review and merge process;</li>
+  <li>Explain how the tests are run (<code>ctest</code>).</li>
+</ul>
+
+<h3>7.4 All Members — Q&amp;A</h3>
+
+<h2>8. Milestones and Division of Work</h2>
+
+<h3>8.1 Timeline (8 weeks as an example; scale proportionally to the actual course cycle)</h3>
+<table>
+  <tr><th>Week</th><th>Milestone</th><th>Output</th><th>Acceptance</th></tr>
+  <tr><td>W1</td><td>Project initiation</td><td>This document finalized; three pre-confirmations completed; repository created and public</td><td>Instructor confirmation record</td></tr>
+  <tr><td>W2</td><td>Skeleton</td><td><code>Registry</code> + <code>Entity</code> concept compilable; FR-4 complete</td><td>T5 passes</td></tr>
+  <tr><td>W3</td><td>Scheduling</td><td><code>Stepper</code> complete; T1 passes</td><td>CI green</td></tr>
+  <tr><td>W4</td><td>Views</td><td><code>View&lt;T&gt;</code> + deferred destruction complete; T2, T3 pass</td><td>CI green</td></tr>
+  <tr><td>W5</td><td>Example</td><td><code>particle_demo</code> runnable; NFR-1~5 met</td><td>demo runs</td></tr>
+  <tr><td>W6</td><td>Documentation</td><td>Full Doxygen coverage; <code>guide.md</code> complete</td><td><code>doc</code> target generates</td></tr>
+  <tr><td>W7</td><td>Freeze</td><td>Feature freeze; only bug fixes and documentation; demo rehearsed ≥ 3 times</td><td>All-member rehearsal passes</td></tr>
+  <tr><td>W8</td><td>Demonstration</td><td>Classroom demonstration</td><td>Five rubric items met</td></tr>
+</table>
+
+<h3>8.2 Role Division (3 people)</h3>
+<table>
+  <tr><th>Role</th><th>Primary responsibility</th><th>Secondary responsibility</th></tr>
+  <tr><td>Architecture / core development</td><td>FR-1, FR-2, FR-3 design and implementation; NFR-4</td><td>Code review</td></tr>
+  <tr><td>Example / testing</td><td>FR-5, example program, all unit tests; CI configuration</td><td>Main operator of the live demonstration</td></tr>
+  <tr><td>Documentation / engineering</td><td>Doxygen, <code>guide.md</code>, README, license; supervision of Git standards</td><td>Collaboration part of the demonstration</td></tr>
+</table>
+<blockquote>Roles are a <strong>primary responsibility</strong> division, not isolation. Every person must have committed at least some code or documentation in another role's area to support the <code>teamwork</code> score.</blockquote>
+
+<h3>8.3 Two-Person Team Trim Plan</h3>
+<ul>
+  <li>Merge "Example / testing" and "Documentation / engineering" into one role;</li>
+  <li>Test cases must still cover T1–T5 and must not be reduced;</li>
+  <li>During the demonstration, "Architecture" handles 7.1, and the other person handles 7.2 and 7.3;</li>
+  <li>The live addition of an entity <strong>must not be omitted</strong>.</li>
+</ul>
+
+<h2>9. Acceptance Criteria (corresponding to the rubric)</h2>
+<table>
+  <tr><th>Rubric item</th><th>Acceptance condition (complete only if all are satisfied)</th></tr>
+  <tr><td><strong>published</strong></td><td>The repository is public and anonymously accessible; the README contains build commands; starting from a clean clone, the three README commands successfully build (verified by the reviewer)</td></tr>
+  <tr><td><strong>documented</strong></td><td>The Doxygen <code>doc</code> target generates with no <code>public</code> member missing <code>@brief</code>; <code>guide.md</code> contains complete, runnable getting-started code; the README three-piece set is complete</td></tr>
+  <tr><td><strong>functional</strong></td><td><code>ctest</code> all green (T1–T5); <code>simcore_demo</code> runs and outputs a summary; <strong>a new entity is added live in class and compiled and run successfully</strong></td></tr>
+  <tr><td><strong>innovative</strong></td><td>The demonstration clearly argues the "library rather than application" positioning; the live entity addition modifies only user files; <code>guide.md</code> targets "another project group" as readers, proving the intent of reusability</td></tr>
+  <tr><td><strong>teamwork</strong></td><td>All minimum collaboration metrics in 6.3 are met; the demonstration is undertaken by different members for 7.1/7.2/7.3 respectively</td></tr>
+</table>
+
+<h2>10. Out-of-Scope Items (explicitly not done)</h2>
+<p>The following content is <strong>outside the scope of this project</strong>; proposers must explain its specific contribution to the rubric, otherwise it will not be included:</p>
+<ul>
+  <li>Graphical user interfaces, visual rendering, OpenGL / SDL integration;</li>
+  <li>Network communication, multi-threaded scheduling, parallel simulation;</li>
+  <li>Serialization / save systems;</li>
+  <li>Plugin systems, scripting bindings (Lua / Python);</li>
+  <li>Example programs exceeding 200 lines.</li>
+</ul>
+<blockquote>Reason: under the rubric, this project's scoring points are concentrated in <strong>reusability, documentation quality, and collaboration traces</strong>, not the number of features. Scope creep would squeeze the documentation and rehearsal time in W6–W7, and the marginal benefit would be negative.</blockquote>
+
+<h2>11. Risks and Mitigations</h2>
+<table>
+  <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+  <tr><td>The instructor requires a single executable program</td><td>The project form needs restructuring</td><td>Pre-confirm in W1; if inconsistent, promote the demo into a dual target of "main program + library" while retaining the library form</td></tr>
+  <tr><td>The live build environment fails</td><td>Loss of functional / innovative points</td><td>Rehearse 3 times in advance; prepare an offline build cache and a backup machine; pre-write the new entity code as a text snippet and paste it live instead of typing it by hand</td></tr>
+  <tr><td>Members' commits are concentrated late</td><td>Loss of teamwork points</td><td>Check the commit distribution every week from W3; those who fall short must make up commits that week and explain</td></tr>
+  <tr><td>Over-engineering (event bus, performance optimization)</td><td>Squeezes documentation time</td><td>Start the content in section 3.4 only after all mandatory items are completed before W5</td></tr>
+  <tr><td>Doxygen comments lag behind the code</td><td>Loss of documented points</td><td>From W6, add a Doxygen warning check to CI (<code>WARN_IF_UNDOCUMENTED = YES</code>)</td></tr>
+</table>
+
+<h2>12. Revision History</h2>
+<table>
+  <tr><th>Version</th><th>Date</th><th>Author</th><th>Description</th></tr>
+  <tr><td>v1.0</td><td>—</td><td>—</td><td>Initial draft, to be finalized after the W1 pre-confirmations</td></tr>
+</table>
+
+</body>
+</html>
