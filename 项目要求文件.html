@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>项目要求文件：simcore —— 可复用仿真核心库</title>
+<style>
+  body {
+    font-family: "Microsoft YaHei", "微软雅黑", "SimSun", serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #222;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  h1 {
+    font-size: 20pt;
+    border-bottom: 3px solid #2c3e50;
+    padding-bottom: 8px;
+    color: #2c3e50;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #2c3e50;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin-top: 28px;
+  }
+  h3 {
+    font-size: 12.5pt;
+    color: #34495e;
+    margin-top: 20px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0 18px 0;
+    font-size: 10pt;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 6px 9px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #e8eef4;
+    font-weight: bold;
+  }
+  tr:nth-child(even) td {
+    background-color: #f9fbfd;
+  }
+  code {
+    font-family: "Consolas", "Courier New", monospace;
+    background-color: #f2f2f2;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9.5pt;
+  }
+  pre {
+    font-family: "Consolas", "Courier New", monospace;
+    background-color: #f5f5f5;
+    border-left: 4px solid #3498db;
+    padding: 10px 14px;
+    overflow-x: auto;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  blockquote {
+    border-left: 4px solid #e67e22;
+    background-color: #fdf6ec;
+    margin: 14px 0;
+    padding: 10px 16px;
+    color: #555;
+  }
+  .frontmatter {
+    background-color: #f4f6f8;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin-bottom: 22px;
+  }
+  .frontmatter table {
+    margin: 6px 0;
+    border: none;
+  }
+  .frontmatter td {
+    border: none;
+    padding: 2px 8px;
+    background: none !important;
+  }
+  .frontmatter td:first-child {
+    font-weight: bold;
+    width: 140px;
+    color: #2c3e50;
+  }
+  strong { color: #1a252f; }
+</style>
+</head>
+<body>
+
+<h1>项目要求文件：simcore —— 可复用仿真核心库</h1>
+
+<div class="frontmatter">
+<table>
+  <tr><td>项目名称</td><td>simcore</td></tr>
+  <tr><td>项目形态</td><td>C++20 静态/头文件库 + 示例程序 + 单元测试</td></tr>
+  <tr><td>技术栈</td><td>C++20、CMake ≥ 3.20、GoogleTest（或 Catch2）、Doxygen</td></tr>
+  <tr><td>团队规模</td><td>6 人（2 人时按第 8.3 节裁剪）</td></tr>
+  <tr><td>文档版本</td><td>v1.0</td></tr>
+  <tr><td>适用评分标准</td><td>published / documented / functional / innovative / teamwork（各 0–1 分）</td></tr>
+</table>
+</div>
+
+<blockquote>
+<strong>前置确认事项（开工前必须完成）</strong><br>
+1. 向教师确认：本课程是否接受「库 + 示例程序」作为项目形态，而非单一可执行程序。<br>
+2. 向教师确认：innovative 维度的评审是否要求现场演示「第三方复用」。<br>
+3. 若任一确认结果与本文件假设不符，先修订本文件再开工。
+</blockquote>
+
+<h2>1. 项目目标</h2>
+<p>本项目交付一个<strong>与具体领域无关的仿真骨架库</strong> <code>simcore</code>。它负责管理「有哪些实体」「时间如何推进」「如何按类型取用实体」，但<strong>不规定仿真的具体内容</strong>。任何需要离散时间步仿真的课程项目，都应能通过 <code>add_subdirectory</code> 引入 <code>simcore</code>，只编写自己的实体类型即可运行。</p>
+<p><strong>核心设计约束（贯穿全文）：</strong></p>
+<ul>
+  <li><code>simcore</code> 是<strong>库</strong>，不是应用。仓库中不存在「唯一的 main 程序」。</li>
+  <li>新增一种实体类型，<strong>只允许修改使用者自己的文件</strong>，不得修改 <code>simcore</code> 的任何源码。</li>
+  <li>公共 API 必须稳定、有文档、有测试；内部实现可自由调整。</li>
+</ul>
+
+<h2>2. 交付物清单</h2>
+<table>
+  <tr><th>编号</th><th>交付物</th><th>位置</th><th>责任人</th></tr>
+  <tr><td>D1</td><td>公开 Git 仓库（public）</td><td>GitHub / GitLab</td><td>全员</td></tr>
+  <tr><td>D2</td><td>库源码 <code>include/simcore/</code></td><td>仓库</td><td>核心开发</td></tr>
+  <tr><td>D3</td><td>示例程序 <code>examples/particle_demo.cpp</code></td><td>仓库</td><td>核心开发</td></tr>
+  <tr><td>D4</td><td>单元测试 <code>tests/</code></td><td>仓库</td><td>测试负责人</td></tr>
+  <tr><td>D5</td><td>Doxygen 文档 + 手写指南 <code>docs/guide.md</code></td><td>仓库 + 生成的 HTML</td><td>文档负责人</td></tr>
+  <tr><td>D6</td><td>README（含构建、使用、许可）</td><td>仓库根目录</td><td>文档负责人</td></tr>
+  <tr><td>D7</td><td>现场演示（含现场新增实体）</td><td>课堂</td><td>全员</td></tr>
+  <tr><td>D8</td><td>演示幻灯片（≤ 10 页）</td><td>课堂</td><td>全员</td></tr>
+</table>
+
+<h2>3. 功能需求</h2>
+
+<h3>3.1 核心组件（必须实现）</h3>
+
+<h4>FR-1 时间步驱动器 <code>Stepper</code></h4>
+<p>必须提供以下公共接口（签名可微调，语义不可变）：</p>
+<pre><code>namespace simcore {
+class Stepper {
+public:
+    explicit Stepper(Registry&amp; reg);
+
+    // 以固定步长推进；duration 不是 step 的整数倍时，最后一帧使用余量
+    void run(double duration, double fixed_step);
+
+    // 推进单个时间步
+    void step(double dt);
+
+    // 当前累计仿真时间
+    [[nodiscard]] double elapsed() const noexcept;
+};
+}</code></pre>
+<p>要求：</p>
+<ul>
+  <li>按注册顺序（或用户指定的优先级）依次调用各实体的 <code>update(dt)</code>。</li>
+  <li>不支持多线程；若后续扩展，须保持单线程语义不变。</li>
+</ul>
+
+<h4>FR-2 实体容器与生命周期 <code>Registry</code></h4>
+<pre><code>namespace simcore {
+class Registry {
+public:
+    // 构造并注册一个 T 类型实体，返回类型安全的句柄
+    template &lt;class T, class... Args&gt;
+    EntityHandle&lt;T&gt; spawn(Args&amp;&amp;... args);
+
+    // 请求销毁；实际销毁延迟到当前 update 循环结束后统一执行
+    template &lt;class T&gt;
+    void despawn(EntityHandle&lt;T&gt; h);
+
+    // 按类型遍历
+    template &lt;class T&gt;
+    View&lt;T&gt; view();
+
+    std::size_t entity_count() const noexcept;
+};
+}</code></pre>
+<p>要求：</p>
+<ul>
+  <li>使用类型擦除（<code>std::unique_ptr&lt;EntityBase&gt;</code> 或等价方案）存储异构实体。</li>
+  <li><code>despawn</code> 必须延迟执行，保证在 <code>view&lt;T&gt;()</code> 遍历过程中销毁实体不导致迭代器失效或崩溃。<strong>此行为必须有单元测试覆盖。</strong></li>
+  <li><code>spawn</code> 的模板参数 <code>T</code> 必须满足 <code>update(dt)</code> 可调用（用 C++20 <code>concept</code> 约束，见 FR-4）。</li>
+</ul>
+
+<h4>FR-3 类型安全视图 <code>View&lt;T&gt;</code></h4>
+<pre><code>template &lt;class T&gt;
+class View {
+public:
+    // 支持 range-based for；迭代期间只产出 T 类型实体
+    Iterator begin();
+    Iterator end();
+};</code></pre>
+<p>要求：<code>View&lt;T&gt;</code> 遍历复杂度不要求 O(1) 定位，但单次完整遍历的复杂度不得高于 O(N)（N 为实体总数）。</p>
+
+<h4>FR-4 实体概念约束</h4>
+<pre><code>template &lt;class T&gt;
+concept Entity = requires(T t, double dt) {
+    { t.update(dt) } -&gt; std::same_as&lt;void&gt;;
+};</code></pre>
+<p>要求：不满足 <code>Entity</code> 的类型在 <code>spawn</code> 时产生<strong>可读的编译期错误</strong>，而非深层模板报错。此点需在文档中给出错误信息示例。</p>
+
+<h4>FR-5 聚合头文件</h4>
+<p><code>include/simcore/simcore.h</code> 必须一次性暴露所有公共 API，使用者只需 <code>#include &lt;simcore/simcore.h&gt;</code>。</p>
+
+<h3>3.2 示例程序（必须实现）</h3>
+<p><code>examples/particle_demo.cpp</code>：</p>
+<ul>
+  <li><strong>不超过 200 行</strong>（含注释）。</li>
+  <li>定义至少 <strong>2 种</strong>不同实体类型（如 <code>Particle</code>、<code>BoundedBox</code>），证明异构实体共存。</li>
+  <li>演示 <code>spawn</code> / <code>despawn</code> / <code>view</code> / <code>run</code> 四个核心 API。</li>
+  <li>通过 CMake target <code>simcore_demo</code> 构建，不依赖除 <code>simcore</code> 外的任何第三方库。</li>
+  <li>运行后在标准输出打印可读的仿真摘要（总时间、实体数变化等）。</li>
+</ul>
+
+<h3>3.3 单元测试（必须实现）</h3>
+<p><code>tests/</code> 下至少覆盖以下用例，全部通过 <code>ctest</code> 执行：</p>
+<table>
+  <tr><th>编号</th><th>用例</th><th>断言要点</th></tr>
+  <tr><td>T1</td><td>固定步长推进</td><td>总时长与 <code>elapsed()</code> 一致，误差 ≤ 1e-9</td></tr>
+  <tr><td>T2</td><td>多类型实体共存</td><td><code>entity_count()</code> 正确；两种类型的 <code>update</code> 均被调用</td></tr>
+  <tr><td>T3</td><td>遍历中销毁</td><td><code>view&lt;T&gt;()</code> 内调用 <code>despawn</code> 不崩溃，循环结束后实体数正确</td></tr>
+  <tr><td>T4</td><td>句柄失效</td><td>对已销毁句柄调用 <code>despawn</code> 的行为已定义（幂等或断言，二选一并文档化）</td></tr>
+  <tr><td>T5</td><td>概念约束</td><td>非法实体类型的 <code>spawn</code> 无法编译（可用 <code>static_assert</code> 或编译失败测试）</td></tr>
+</table>
+<p>覆盖率不设硬性门槛，但 T1–T3 为<strong>强制项</strong>，缺失即视为 FR 未完成。</p>
+
+<h3>3.4 可选增强（不影响验收，时间富余再做）</h3>
+<ul>
+  <li>类型安全事件总线：<code>publish&lt;T&gt;()</code> / <code>subscribe&lt;T&gt;()</code>。</li>
+  <li><code>Stepper</code> 支持优先级排序。</li>
+  <li>简单的性能基准（<code>bench/</code>），对比 N=10⁵ 实体下的单步耗时。</li>
+</ul>
+
+<h2>4. 非功能需求</h2>
+<table>
+  <tr><th>编号</th><th>要求</th></tr>
+  <tr><td>NFR-1</td><td>仅使用 C++20 标准库，不引入第三方运行时依赖（测试框架除外）</td></tr>
+  <tr><td>NFR-2</td><td>在 GCC ≥ 11 与 Clang ≥ 14 下编译零警告（<code>-Wall -Wextra -Wpedantic</code>）</td></tr>
+  <tr><td>NFR-3</td><td>提供 <code>.clang-format</code>，所有提交的源码须经格式化</td></tr>
+  <tr><td>NFR-4</td><td>使用现代 CMake（target-based）：库目标导出 alias <code>simcore::simcore</code>，设置 <code>target_include_directories</code> 与 <code>target_compile_features</code>，不使用全局 <code>include_directories</code></td></tr>
+  <tr><td>NFR-5</td><td>库在 <code>add_subdirectory</code> 与 <code>find_package</code>（可选安装规则）两种方式下均可被消费</td></tr>
+  <tr><td>NFR-6</td><td>许可证文件（MIT 或课程指定）置于仓库根目录</td></tr>
+</table>
+
+<h2>5. 文档要求</h2>
+
+<h3>5.1 Doxygen（强制）</h3>
+<ul>
+  <li>所有 <code>public</code> 声明必须有 <code>@brief</code>；带参数/模板参数的接口必须有 <code>@param</code> / <code>@tparam</code>。</li>
+  <li>每个公共组件至少有一个 <code>@code</code> 示例。</li>
+  <li>提供 <code>docs/Doxyfile</code>；CMake 提供 <code>doc</code> target，执行 <code>cmake --build build --target doc</code> 生成 HTML。</li>
+  <li>生成结果不强制入库，但<strong>演示时须现场打开生成页面</strong>。</li>
+</ul>
+
+<h3>5.2 手写指南 <code>docs/guide.md</code>（强制）</h3>
+<p>读者定位：<strong>另一个课程项目的小组</strong>。内容必须包含：</p>
+<ol>
+  <li>一句话说明 <code>simcore</code> 是什么、不做什么；</li>
+  <li>5 分钟上手：从 <code>add_subdirectory</code> 到写出第一个实体并运行的完整代码；</li>
+  <li>新增实体类型的步骤（强调「只碰你自己的文件」）；</li>
+  <li>常见编译错误的含义与解决方式（至少覆盖 FR-4 的概念约束失败）。</li>
+</ol>
+
+<h3>5.3 README（强制）</h3>
+<p>必须包含：项目定位一段话、构建命令三行、指向 <code>docs/guide.md</code> 与 Doxygen 的链接、许可证、目录结构说明。可选：构建状态徽章。</p>
+
+<h2>6. Git 协作规范</h2>
+
+<h3>6.1 分支与合并</h3>
+<ul>
+  <li><code>main</code> 为保护分支，<strong>禁止直接推送</strong>。</li>
+  <li>每人从 <code>main</code> 切出 <code>feature/&lt;姓名拼音&gt;-&lt;功能&gt;</code>，完成后以 Pull Request 合并。</li>
+  <li>每个 PR 至少 <strong>1 名其他成员 Approve</strong> 后方可合并（形式审查即可，但须留下评论）。</li>
+  <li>禁止 <code>push --force</code> 到 <code>main</code>。</li>
+</ul>
+
+<h3>6.2 提交信息</h3>
+<p>格式：<code>&lt;type&gt;: &lt;简短描述&gt;</code>，<code>type ∈ {feat, fix, docs, test, build, refactor, chore}</code>。</p>
+<ul>
+  <li>禁止 <code>update</code>、<code>fix bug</code>、<code>.</code> 等无语义信息。</li>
+  <li>未完成代码推送须加 <code>WIP:</code> 前缀，合并前 squash 为干净提交。</li>
+  <li><strong>每位成员的提交须分布在整个开发周期内</strong>，禁止最后一周集中提交（此项为 <code>teamwork</code> 评分直接观测点）。</li>
+</ul>
+
+<h3>6.3 最低协作指标</h3>
+<table>
+  <tr><th>指标</th><th>最低要求</th></tr>
+  <tr><td>每位成员的 commit 数</td><td>≥ 8</td></tr>
+  <tr><td>每位成员的 PR 数</td><td>≥ 2</td></tr>
+  <tr><td>代码审查记录</td><td>每个 PR 至少 1 条他人评论</td></tr>
+  <tr><td>提交时间跨度</td><td>覆盖开发周期的 ≥ 70%</td></tr>
+</table>
+
+<h2>7. 演示要求</h2>
+<p>时长按课程规定（假设 10–15 分钟），按以下叙事线分工，<strong>不按时间机械切分</strong>：</p>
+
+<h3>7.1 成员 A —— 定位与可复用性论证（约 3 分钟）</h3>
+<ul>
+  <li>解释「为什么做库而不是做应用」；</li>
+  <li>展示抽象边界图（1 页幻灯片即可）；</li>
+  <li>打开 Doxygen 生成的文档页面，证明文档由源码注释生成、与代码同步。</li>
+</ul>
+
+<h3>7.2 成员 B —— 现场功能演示（约 5 分钟，<strong>关键环节</strong>）</h3>
+<ol>
+  <li>构建并运行 <code>simcore_demo</code>，说明输出含义；</li>
+  <li><strong>现场新建一个文件，编写一个最小实体（3–5 行），修改 demo 的 <code>main</code> 引入该实体，重新编译并运行成功。</strong></li>
+  <li>明确口述：「新增实体只修改了使用者文件，<code>simcore</code> 源码零改动。」</li>
+</ol>
+<blockquote>第 2 步为<strong>强制项</strong>。若现场编译失败，<code>functional</code> 与 <code>innovative</code> 两项均可能被判不完整。须提前演练至少 3 次，并准备离线编译环境（不依赖现场网络）。</blockquote>
+
+<h3>7.3 成员 C —— 工程与协作（约 3 分钟）</h3>
+<ul>
+  <li>打开仓库 Insights / Network 页面，展示各成员分支合并轨迹；</li>
+  <li>指出一个具体 PR，说明审查与合并过程；</li>
+  <li>说明测试如何运行（<code>ctest</code>）。</li>
+</ul>
+
+<h3>7.4 全员 —— 问答</h3>
+
+<h2>8. 里程碑与分工</h2>
+
+<h3>8.1 时间线（以 8 周为例，按实际课程周期等比缩放）</h3>
+<table>
+  <tr><th>周次</th><th>里程碑</th><th>产出</th><th>验收</th></tr>
+  <tr><td>W1</td><td>立项</td><td>本文件定稿；三项前置确认完成；仓库建立并 public</td><td>教师确认记录</td></tr>
+  <tr><td>W2</td><td>骨架</td><td><code>Registry</code> + <code>Entity</code> concept 可编译；FR-4 完成</td><td>T5 通过</td></tr>
+  <tr><td>W3</td><td>调度</td><td><code>Stepper</code> 完成；T1 通过</td><td>CI 绿</td></tr>
+  <tr><td>W4</td><td>视图</td><td><code>View&lt;T&gt;</code> + 延迟销毁完成；T2、T3 通过</td><td>CI 绿</td></tr>
+  <tr><td>W5</td><td>示例</td><td><code>particle_demo</code> 可运行；NFR-1~5 达标</td><td>demo 可跑</td></tr>
+  <tr><td>W6</td><td>文档</td><td>Doxygen 全覆盖；<code>guide.md</code> 完成</td><td><code>doc</code> target 可生成</td></tr>
+  <tr><td>W7</td><td>冻结</td><td>功能冻结；仅修 bug 与文档；演示演练 ≥ 3 次</td><td>全员演练通过</td></tr>
+  <tr><td>W8</td><td>演示</td><td>课堂演示</td><td>五项 rubric 达标</td></tr>
+</table>
+
+<h3>8.2 角色分工（3 人）</h3>
+<table>
+  <tr><th>角色</th><th>主责</th><th>兼责</th></tr>
+  <tr><td>架构 / 核心开发</td><td>FR-1、FR-2、FR-3 设计与实现；NFR-4</td><td>代码审查</td></tr>
+  <tr><td>示例 / 测试</td><td>FR-5、示例程序、全部单元测试；CI 配置</td><td>现场演示主操作</td></tr>
+  <tr><td>文档 / 工程</td><td>Doxygen、<code>guide.md</code>、README、许可证；Git 规范监督</td><td>演示协作部分</td></tr>
+</table>
+<blockquote>角色是<strong>主责</strong>划分，不是隔离。每人都必须至少提交过其他角色领域的代码或文档，以支撑 <code>teamwork</code> 评分。</blockquote>
+
+<h3>8.3 两人团队裁剪方案</h3>
+<ul>
+  <li>合并「示例 / 测试」与「文档 / 工程」为一个角色；</li>
+  <li>测试用例仍须覆盖 T1–T5，不得删减；</li>
+  <li>演示时由「架构」负责 7.1，另一人负责 7.2 与 7.3；</li>
+  <li>现场新增实体的环节<strong>不可省略</strong>。</li>
+</ul>
+
+<h2>9. 验收标准（对应评分表）</h2>
+<table>
+  <tr><th>Rubric 项</th><th>验收条件（全部满足才算 complete）</th></tr>
+  <tr><td><strong>published</strong></td><td>仓库 public 可匿名访问；README 含构建命令；从干净 clone 出发，按 README 三条命令可成功构建（评审者实测）</td></tr>
+  <tr><td><strong>documented</strong></td><td>Doxygen <code>doc</code> target 可生成且无 <code>public</code> 成员缺 <code>@brief</code>；<code>guide.md</code> 含可运行的完整上手代码；README 三件套齐全</td></tr>
+  <tr><td><strong>functional</strong></td><td><code>ctest</code> 全绿（T1–T5）；<code>simcore_demo</code> 可运行并输出摘要；<strong>课堂现场新增实体并编译运行成功</strong></td></tr>
+  <tr><td><strong>innovative</strong></td><td>演示中明确论证「库而非应用」的定位；现场新增实体仅改使用者文件；<code>guide.md</code> 以「另一个项目组」为读者，证明可复用意图</td></tr>
+  <tr><td><strong>teamwork</strong></td><td>满足 6.3 全部最低协作指标；演示由不同成员分别承担 7.1/7.2/7.3</td></tr>
+</table>
+
+<h2>10. 范围外事项（明确不做）</h2>
+<p>以下内容<strong>不在本项目范围内</strong>，提出者须说明其对评分标准的具体贡献，否则不予纳入：</p>
+<ul>
+  <li>图形界面、可视化渲染、OpenGL / SDL 集成；</li>
+  <li>网络通信、多线程调度、并行仿真；</li>
+  <li>序列化 / 存档系统；</li>
+  <li>插件系统、脚本绑定（Lua / Python）；</li>
+  <li>超过 200 行的示例程序。</li>
+</ul>
+<blockquote>理由：本项目在评分标准下的得分点集中在<strong>可复用性、文档质量与协作痕迹</strong>，而非功能数量。范围蔓延会挤占 W6–W7 的文档与演练时间，边际收益为负。</blockquote>
+
+<h2>11. 风险与应对</h2>
+<table>
+  <tr><th>风险</th><th>影响</th><th>应对</th></tr>
+  <tr><td>教师要求单一可执行程序</td><td>项目形态需重构</td><td>W1 前置确认；若不符，将 demo 提升为「主程序 + 库」双 target，保留库形态</td></tr>
+  <tr><td>现场编译环境异常</td><td>functional / innovative 失分</td><td>提前 3 次演练；准备离线编译缓存与备用机器；新增实体代码预写为文本片段，现场粘贴而非手打</td></tr>
+  <tr><td>成员提交集中在下游</td><td>teamwork 失分</td><td>W3 起每周检查 commit 分布，不达标者当周补提交并说明</td></tr>
+  <tr><td>过度设计（事件总线、性能优化）</td><td>挤占文档时间</td><td>3.4 节内容仅在 W5 前全部强制项完成后才启动</td></tr>
+  <tr><td>Doxygen 注释滞后于代码</td><td>documented 失分</td><td>W6 起 CI 增加 Doxygen 警告检查（<code>WARN_IF_UNDOCUMENTED = YES</code>）</td></tr>
+</table>
+
+<h2>12. 修订记录</h2>
+<table>
+  <tr><th>版本</th><th>日期</th><th>修改人</th><th>说明</th></tr>
+  <tr><td>v1.0</td><td>—</td><td>—</td><td>初稿，待 W1 前置确认后定稿</td></tr>
+</table>
+
+</body>
+</html>

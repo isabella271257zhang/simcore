@@ -1,0 +1,188 @@
+# simcore in five minutes
+
+`simcore` is a library that owns simulation entities and advances time; it is
+not an application framework, and it does not define what an entity looks like
+beyond a single `update(double dt)` member function.
+
+This guide is written for another course project that wants to reuse `simcore`
+without reading its source.
+
+## Requirements
+
+- CMake 3.20 or newer.
+- A C++20 compiler: GCC 11+, Clang 14+, or MSVC 19.29+.
+
+## Step 1: add simcore to your project
+
+Clone or copy `simcore` next to your project, then add it as a subdirectory and
+link the exported target:
+
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(my_simulation LANGUAGES CXX)
+
+# Adjust the path to wherever simcore lives.
+add_subdirectory(third_party/simcore simcore)
+
+add_executable(my_simulation main.cpp)
+target_link_libraries(my_simulation PRIVATE simcore::simcore)
+```
+
+`target_link_libraries` with `simcore::simcore` provides the include directory
+(`simcore/simcore.h`) and the C++20 requirement; do not add include paths or
+`-std=c++20` manually.
+
+Build and run:
+
+```sh
+cmake -S . -B build
+cmake --build build
+./build/my_simulation
+```
+
+## Step 2: write your first entities
+
+Create `main.cpp` with two entity types and use all four core APIs:
+
+```cpp
+#include <simcore/simcore.h>
+
+#include <cstdio>
+
+// Your entity: any type with "void update(double dt)".
+struct Drone {
+    Drone(double altitude, double climb_rate)
+        : altitude(altitude), climb_rate(climb_rate) {}
+
+    void update(double dt) { altitude += climb_rate * dt; }
+
+    double altitude;
+    double climb_rate;
+};
+
+// A second, unrelated entity type in the same registry.
+struct Clock {
+    void update(double dt) { time += dt; }
+
+    double time{0.0};
+};
+
+int main() {
+    simcore::Registry registry;
+    simcore::Stepper stepper(registry);
+
+    auto drone = registry.spawn<Drone>(10.0, 2.0);
+    auto clock = registry.spawn<Clock>();
+
+    // 1.0 s is not a multiple of 0.3 s: the steps are 0.3, 0.3, 0.3, 0.1.
+    stepper.run(1.0, 0.3);
+
+    std::printf("elapsed=%.2f s altitude=%.2f m clock=%.2f s entities=%zu\n",
+                stepper.elapsed(), drone->altitude, clock->time, registry.entity_count());
+
+    // Views yield only entities of the requested type.
+    for (auto& d : registry.view<Drone>()) {
+        if (d.altitude > 11.0) {
+            registry.despawn(drone);  // safe inside a traversal
+        }
+    }
+
+    std::printf("after despawn: entities=%zu\n", registry.entity_count());
+    return 0;
+}
+```
+
+Expected output:
+
+```
+elapsed=1.00 s altitude=12.00 m clock=1.00 s entities=2
+after despawn: entities=1
+```
+
+What to remember:
+
+- `spawn<T>(args...)` constructs `T` in place and returns `EntityHandle<T>`,
+  which supports `->`, `*`, `get()`, and `valid()`.
+- `view<T>()` yields mutable references to live `T` entities only.
+- `despawn(handle)` may be called during a view traversal or from `update()`;
+  the entity disappears immediately and its memory is released after the
+  traversal or update pass ends. It is safe to despawn the entity you are
+  currently visiting.
+- `stepper.run(duration, step)` calls `update(dt)` on every live entity in
+  registration order, using `step` for each frame and the remainder for the
+  final frame. `stepper.elapsed()` reports the accumulated simulated time.
+
+## Step 3: add another entity type later
+
+1. Create a new header or source file in **your** project, for example
+   `src/temperature.h`.
+2. Give the type a member function callable as `void update(double dt)`.
+3. Call `registry.spawn<Temperature>(...)` from your own code.
+4. Nothing in `simcore` changes, and `simcore` is not recompiled.
+
+If the new type needs to interact with others, use `registry.view<Other>()`
+inside its `update()`; nested views are supported.
+
+## Common compile errors
+
+### "does not satisfy the simcore::Entity concept"
+
+Full diagnostic (GCC):
+
+```
+error: static assertion failed: simcore::Registry::spawn<T>: T does not satisfy
+the simcore::Entity concept. An entity type must provide a member function
+callable as 'void update(double dt)'.
+```
+
+Cause: the type passed to `spawn<T>()` has no `update` member, has the wrong
+name, or returns something other than `void`.
+
+Fix: add exactly one member function with a compatible signature:
+
+```cpp
+struct MyEntity {
+    void update(double dt);  // must exist and return void
+};
+```
+
+A `const` member function also works, because it is callable on a non-const
+entity. A function taking `float` does not work; the step is a `double`.
+
+### "T is not constructible from the arguments forwarded to spawn()"
+
+Cause: `spawn<T>(args...)` tries to construct `T` with the arguments you
+passed.
+
+Fix: pass matching constructor arguments, for example
+`registry.spawn<MyEntity>(1.0, 2.0)` for
+`MyEntity(double, double)`, instead of `registry.spawn<MyEntity>()`.
+
+### "simcore/simcore.h: No such file or directory"
+
+Cause: the consumer target does not link `simcore`.
+
+Fix: add `target_link_libraries(your_target PRIVATE simcore::simcore)`; that
+target carries the include directory. Do not hard-code an include path.
+
+### C++20 features are rejected
+
+Cause: the consumer does not use the imported target, so the C++20 requirement
+is not propagated.
+
+Fix: link `simcore::simcore`, or set `target_compile_features(your_target
+PRIVATE cxx_std_20)` (or `-std=c++20`) on the target that includes
+`simcore/simcore.h`.
+
+## Behaviour notes
+
+- **Deferred destruction.** `entity_count()` and `view<T>()` stop seeing an
+  entity as soon as `despawn()` is called, but its storage is released when the
+  current traversal or update pass ends. This is what makes despawn-during-
+  iteration safe.
+- **Idempotent despawn.** Calling `despawn()` again with the same handle, or
+  with a handle whose slot has been recycled, is a no-op.
+- **Type filtering is exact.** `view<Base>()` does not yield derived entities;
+  iterate `view<Derived>()` instead.
+- **Single-threaded.** A `Registry`, its views, and a `Stepper` must be used
+  from one thread.
