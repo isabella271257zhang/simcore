@@ -1,0 +1,10 @@
+add_executable(simcore_demo particle_demo.cpp)
+
+target_link_libraries(simcore_demo PRIVATE simcore::simcore)
+target_compile_features(simcore_demo PRIVATE cxx_std_20)
+
+set_target_properties(simcore_demo PROPERTIES CXX_EXTENSIONS OFF)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(simcore_demo PRIVATE -Wall -Wextra -Wpedantic)
+endif()
