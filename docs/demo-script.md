@@ -1,19 +1,18 @@
 # simcore classroom demo script
 
-Total duration: 12-14 minutes, hard limit 15 minutes. Three speakers: A, B, C.
-The script follows section 7 of the project requirements: positioning (about
-3 minutes), live functionality demo (about 5 minutes), engineering and
-collaboration (about 3 minutes), then Q&A.
+Total duration: about 12-13 minutes, hard limit 15 minutes. Three speakers:
+A, B, C. The script follows section 7 of the project requirements:
+positioning (about 3 minutes), live functionality demo (about 5 minutes),
+engineering and verification (about 2 minutes), then Q&A.
 
-Replace `A`, `B`, `C` with real names and `<PR-number>` with the pull request
-used in your repository before rehearsing.
+Replace `A`, `B`, `C` with real names before rehearsing.
 
 ## Screen layout before starting
 
 - Terminal 1: repository root, font at least 18 pt.
-- Editor: `examples/particle_demo.cpp` and `examples/thermometer.h` tabs.
-- Browser tab 1: `build/docs/html/index.html`.
-- Browser tab 2: the GitHub/GitLab repository page, logged in.
+- Editor: `examples/particle_demo.cpp`, `examples/thermometer.h`, and
+  `docs/Doxyfile` tabs.
+- Browser tab: `build/docs/html/index.html`.
 - Slides in presentation mode on the second display.
 
 ## Pre-demo checklist (T-15 minutes)
@@ -225,9 +224,11 @@ git status --short
 git diff --stat
 ```
 
-Point at the output: only `examples/particle_demo.cpp` is modified and
-`examples/thermometer.h` is new. Nothing under `include/simcore/` or `src/`
-appears.
+Point at the output: `git status --short` lists exactly two entries,
+`M examples/particle_demo.cpp` and `?? examples/thermometer.h`.
+`git diff --stat` covers tracked files only, so it shows the four added lines
+in `particle_demo.cpp` and does not list the new untracked header. Nothing
+under `include/simcore/` or `src/` appears.
 
 Say:
 
@@ -237,7 +238,7 @@ Say:
 
 Hand-off (4:40-5:00):
 
-> C will show how this is built, tested, and reviewed.
+> C will show how the work is recorded, tested, and documented.
 
 ### Rehearsal pitfalls in this segment
 
@@ -258,54 +259,25 @@ rebuild, and continue with the prepared output.
 
 ---
 
-## Segment 3 - Engineering and collaboration (3:00) - Speaker C
+## Segment 3 - Engineering and verification (2:00) - Speaker C
 
-### Branch and merge history (0:00-1:10)
+### Commit history and message discipline (0:00-0:40)
 
-Terminal:
+Terminal at the repository root:
 
 ```sh
-git log --graph --oneline --decorate --all -25
+git log --oneline --decorate -8
 ```
 
-Say:
-
-> Every feature branch was cut from main and merged through a pull request.
-> Green lanes are merges, not direct pushes to main.
-
-Switch to the repository page:
-
-1. Click **Insights**, then **Network** in the left sidebar.
-2. Hover over two or three branches and point at the merge points.
+Point at the subject lines.
 
 Say:
 
-> main is protected. Each branch is named `feature/<name>-<topic>` and carries
-> one feature or one fix.
+> Every commit has a type prefix: `chore`, `feat`, `build`, `test`, `docs`.
+> Each subject names one concern; none says `update` or `fix bug`. A reader can
+> tell what changed and why without opening the diff.
 
-### One pull request under review (1:10-2:20)
-
-1. Click **Pull requests**, open `<PR-number>` (use the real one, for example
-   the deferred-despawn PR).
-2. Point at the title, the linked issue or task, and the commit list.
-3. Click **Files changed**; scroll to a concrete hunk and read one review
-   comment written by another member.
-4. Click **Review changes**, select **Approve**, and submit.
-5. Click **Merge pull request**, then **Confirm merge**.
-
-Say:
-
-> The rule is one approval from another member before merging, and every review
-> leaves a comment. The commit messages follow `type: summary`, for example
-> `feat: defer entity destruction until iteration ends`.
-
-If the classroom account cannot merge, stop after the approval dialog and say
-the merge was performed during development; show the merged state in the commit
-graph instead.
-
-### Tests and docs (2:20-3:00)
-
-Terminal:
+### Tests: what the eight cases prove (0:40-1:20)
 
 ```sh
 ctest --test-dir build -C Release --output-on-failure
@@ -313,18 +285,43 @@ ctest --test-dir build -C Release --output-on-failure
 
 Say:
 
-> Eight tests, all green. They cover the required cases: fixed-step timing and
-> the remainder frame, heterogeneous entities, despawn during a view, stale
-> handle behaviour, and the compile-time entity constraint. The last test is
-> unusual: it builds a target that must fail to compile, and passes only if the
-> compiler prints the Entity concept diagnostic.
+> Eight tests, all green. Three cover T1: 1.0 second at 0.1 gives ten updates;
+> 0.25 second gives three updates with a 0.05 second final frame; explicit
+> `step` calls accumulate into `elapsed()`. T2: a particle and a box coexist,
+> both receive the same dt, and each view yields only its own type. T3:
+> despawning the visited entity keeps the traversal valid; despawning an
+> unvisited one skips it. T4: stale handles are idempotent, including after
+> slot reuse. T5: ctest builds a target that must fail to compile and passes
+> only on the Entity concept diagnostic.
 
-Optionally run `cmake --build build --target doc` and say:
+### Documentation tied to code (1:20-1:55)
 
-> The documentation target regenerates the API pages from header comments and
-> fails on undocumented public members.
+Open `docs/Doxyfile` in the editor and point at:
 
-Hand-off to Q&A.
+- `WARN_IF_UNDOCUMENTED = YES`
+- `WARN_NO_PARAMDOC = YES`
+- `WARN_AS_ERROR = YES`
+
+Then run:
+
+```sh
+cmake --build build --target doc
+```
+
+Say:
+
+> Doxygen reads the public headers; there is no separate API document. These
+> three settings make a missing `@brief` or `@param` a warning, and
+> `WARN_AS_ERROR` turns a warning into a failed build, so the doc target cannot
+> succeed with an undocumented public member. Running it now regenerates the
+> pages from the current headers.
+
+Optional: open `build/docs/html/index.html` and show the Registry page created
+from `registry.h`.
+
+Hand-off (1:55-2:00):
+
+> That is how work is recorded, verified, and documented.
 
 ---
 
@@ -379,15 +376,15 @@ Hand-off to Q&A.
 7. **Demo II - add an entity without touching the library**
    - New `thermometer.h`, three small edits in the demo
    - Only `simcore_demo` recompiles
-   - Proof: `git status` shows consumer files only
-8. **Engineering - CMake, tests, docs**
+   - Proof: `git status` shows exactly two consumer files
+8. **Build engineering - CMake targets**
    - Target-based CMake, alias `simcore::simcore`, C++20
-   - Eight ctest cases including a compile-failure test
-   - `doc` target fails on undocumented public members
-9. **Collaboration - branches, PRs, reviews**
-   - `feature/<name>-<topic>` branches, protected `main`
-   - One approval and one review comment per PR
-   - Commit format `type: summary`
+   - Targets: `simcore`, `simcore_demo`, `simcore_tests`, `doc`
+   - Public headers in `include/`, non-template code in `src/`
+9. **Verification evidence - history, tests, docs**
+   - Typed commits; each subject names one concern
+   - Eight ctest cases covering T1-T5, including a compile-failure test
+   - `WARN_AS_ERROR` makes missing documentation fail the `doc` target
 10. **Wrap-up and Q&A**
     - Reusable core, documented API, tested behavior
     - Limits: single-threaded, no install/export rules
