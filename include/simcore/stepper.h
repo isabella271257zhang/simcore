@@ -8,6 +8,8 @@ namespace simcore {
 ///
 /// The stepper owns no entities. It calls update(dt) in ascending priority
 /// order, with registration order breaking ties. Ordinary spawn() uses zero.
+/// After each step it dispatches the registry's queued events (see
+/// Registry::events()), once the update pass has finished.
 ///
 /// @note A stepper is not thread-safe; drive a registry from one thread only.
 ///

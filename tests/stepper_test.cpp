@@ -248,3 +248,66 @@ TEST(StepperTest, ViewsStillUseStorageOrder) {
     }
     EXPECT_EQ(view_order, (std::vector<int>{1, 2}));
 }
+
+// T1 (continued): update() runs in registration order, so an entity that
+// recycles the slot of a despawned one is still updated after the entities
+// that were registered before it.
+TEST(StepperTest, UpdateFollowsRegistrationOrder) {
+    simcore::Registry registry;
+    simcore::Stepper stepper(registry);
+    std::vector<int> visited;
+
+    struct Recorder {
+        std::vector<int>* log{nullptr};
+        int id{0};
+        void update(double) { log->push_back(id); }
+    };
+
+    registry.spawn<Recorder>(Recorder{&visited, 1});
+    auto second = registry.spawn<Recorder>(Recorder{&visited, 2});
+    registry.spawn<Recorder>(Recorder{&visited, 3});
+    registry.despawn(second);
+    registry.spawn<Recorder>(Recorder{&visited, 4});
+
+    stepper.step(0.1);
+
+    EXPECT_EQ(visited, (std::vector<int>{1, 3, 4}));
+}
+
+TEST(StepperTest, EqualPrioritiesKeepOrderAfterMiddleDeletion) {
+    simcore::Registry registry;
+    simcore::Stepper stepper(registry);
+    std::vector<int> log;
+    registry.spawn_with_priority<OrderedEntity>(5, 1, log);
+    auto middle = registry.spawn_with_priority<OrderedEntity>(5, 2, log);
+    registry.spawn_with_priority<OrderedEntity>(5, 3, log);
+    registry.spawn_with_priority<OrderedEntity>(5, 4, log);
+    registry.despawn(middle);
+
+    stepper.step(0.1);
+
+    EXPECT_EQ(log, (std::vector<int>{1, 3, 4}));
+}
+
+TEST(StepperTest, PriorityUpdatesDispatchEventsAfterAllEntities) {
+    struct UpdateEvent {
+        int sender;
+    };
+
+    simcore::Registry registry;
+    simcore::Stepper stepper(registry);
+    std::vector<int> log;
+    registry.events().subscribe<UpdateEvent>([&](const UpdateEvent& event) {
+        log.push_back(event.sender);
+    });
+    registry.spawn_with_priority<OrderedEntity>(10, 1, log, [&] {
+        registry.events().publish(UpdateEvent{11});
+    });
+    registry.spawn_with_priority<OrderedEntity>(-10, 2, log, [&] {
+        registry.events().publish(UpdateEvent{22});
+    });
+
+    stepper.step(0.1);
+
+    EXPECT_EQ(log, (std::vector<int>{2, 1, 22, 11}));
+}

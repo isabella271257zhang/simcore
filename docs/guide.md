@@ -163,6 +163,40 @@ Render (dt=0.10)
 If the new type needs to interact with others, use `registry.view<Other>()`
 inside its `update()`; nested views are supported.
 
+## Step 4 (optional): route typed events
+
+`simcore` can route typed events between entities that never reference each
+other. Subscribe to a type, publish events by value, and the stepper delivers
+everything queued at the end of each step:
+
+```cpp
+struct Hit {
+    int damage;
+};
+
+simcore::Registry registry;
+simcore::Stepper stepper(registry);
+
+registry.events().subscribe<Hit>([](const Hit& hit) {
+    std::printf("hit for %d\n", hit.damage);
+});
+
+registry.events().publish(Hit{5});  // queued, nothing runs yet
+stepper.step(0.1);                  // prints "hit for 5"
+```
+
+What to remember:
+
+- `publish<T>(event)` never calls listeners directly; it queues the event.
+  Delivery happens on the next `Stepper::step()` (or an explicit
+  `registry.events().dispatch()`), in publish order. This mirrors the deferred
+  destruction of `despawn()`.
+- `subscribe<T>(listener)` registers a listener for exactly type `T` and returns
+  a `Subscription`. The listener stays registered until you call
+  `subscription.unsubscribe()`; discarding the returned value keeps it alive.
+- An event published from inside a listener is delivered on the following
+  dispatch, so listeners cannot recurse without bound.
+
 ## Common compile errors
 
 ### "does not satisfy the simcore::Entity concept"
@@ -224,5 +258,8 @@ PRIVATE cxx_std_20)` (or `-std=c++20`) on the target that includes
   with a handle whose slot has been recycled, is a no-op.
 - **Type filtering is exact.** `view<Base>()` does not yield derived entities;
   iterate `view<Derived>()` instead.
-- **Single-threaded.** A `Registry`, its views, and a `Stepper` must be used
-  from one thread.
+- **Deferred events.** `publish<T>()` only queues an event; listeners run when
+  the step ends (or on an explicit `dispatch()`), in publish order. Events and
+  destruction therefore share the same deferred model.
+- **Single-threaded.** A `Registry`, its views, a `Stepper`, and the registry's
+  event bus must be used from one thread.

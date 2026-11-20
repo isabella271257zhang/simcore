@@ -8,6 +8,18 @@ threading, serialization, or scheduling policy inside the library. New entity
 types are written entirely in the consumer's own files; `simcore` does not need
 to be modified or recompiled.
 
+## Public API at a glance
+
+| API | Purpose |
+|---|---|
+| `Registry::spawn<T>(args...)` | Creates an entity of type `T` and returns an `EntityHandle<T>`. |
+| `Registry::view<T>()` | Iterates over all live entities of type `T`. |
+| `Registry::despawn(handle)` | Safely removes an entity, including during traversal. |
+| `Registry::entity_count()` | Returns the number of currently live entities. |
+| `Stepper::step(dt)` | Advances every live entity by one time step. |
+| `Stepper::run(duration, fixed_step)` | Advances the simulation using fixed steps and a final remainder step if needed. |
+| `Stepper::elapsed()` | Returns the total simulated time advanced so far. |
+
 ## Build, test, run
 
 Pick the block for your platform. Both blocks perform the same three steps:

@@ -39,7 +39,7 @@ void Stepper::step(double dt) {
     // update joins the next step, even when it reuses an earlier free slot.
     std::vector<std::size_t> update_order;
     update_order.reserve(registry_->entity_count_);
-    for (std::size_t index = 0; index < registry_->slots_.size(); ++index) {
+    for (const std::size_t index : registry_->order_) {
         if (registry_->slots_[index].alive) {
             update_order.push_back(index);
         }
@@ -65,6 +65,7 @@ void Stepper::step(double dt) {
         throw;
     }
     registry_->end_iteration();
+    registry_->events().dispatch();
     elapsed_ += dt;
 }
 
