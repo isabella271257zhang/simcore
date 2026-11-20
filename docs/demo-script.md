@@ -277,7 +277,7 @@ Say:
 > Each subject names one concern; none says `update` or `fix bug`. A reader can
 > tell what changed and why without opening the diff.
 
-### Tests: what the fifteen cases prove (0:40-1:20)
+### Tests: what the eight cases prove (0:40-1:20)
 
 ```sh
 ctest --test-dir build -C Release --output-on-failure
@@ -285,18 +285,14 @@ ctest --test-dir build -C Release --output-on-failure
 
 Say:
 
-> Fifteen tests, all green. Four cover T1: 1.0 second at 0.1 gives ten updates;
+> Eight tests, all green. Three cover T1: 1.0 second at 0.1 gives ten updates;
 > 0.25 second gives three updates with a 0.05 second final frame; explicit
-> `step` calls accumulate into `elapsed()`; and an entity that recycles a
-> despawned slot still updates after the entities registered before it. T2: a
-> particle and a box coexist, both receive the same dt, and each view yields
-> only its own type. T3: despawning the visited entity keeps the traversal
-> valid; despawning an unvisited one skips it. T4: stale handles are idempotent,
-> including after slot reuse. T5: ctest builds a target that must fail to
-> compile and passes only on the Entity concept diagnostic. Six more exercise
-> the event bus: deferred until the step ends, filtered by type, run in
-> registration order, stopped by unsubscribe, and cascaded events queued for
-> the next dispatch.
+> `step` calls accumulate into `elapsed()`. T2: a particle and a box coexist,
+> both receive the same dt, and each view yields only its own type. T3:
+> despawning the visited entity keeps the traversal valid; despawning an
+> unvisited one skips it. T4: stale handles are idempotent, including after
+> slot reuse. T5: ctest builds a target that must fail to compile and passes
+> only on the Entity concept diagnostic.
 
 ### Documentation tied to code (1:20-1:55)
 
@@ -387,7 +383,7 @@ Hand-off (1:55-2:00):
    - Public headers in `include/`, non-template code in `src/`
 9. **Verification evidence - history, tests, docs**
    - Typed commits; each subject names one concern
-   - Fifteen ctest cases covering T1-T5 and the event bus, including a compile-failure test
+   - Fourteen ctest cases covering T1-T5 and the event bus, including a compile-failure test
    - `WARN_AS_ERROR` makes missing documentation fail the `doc` target
 10. **Wrap-up and Q&A**
     - Reusable core, documented API, tested behavior
