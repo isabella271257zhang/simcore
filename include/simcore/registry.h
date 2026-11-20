@@ -178,6 +178,7 @@ private:
         std::shared_ptr<EntityBase> entity{};
         std::uint32_t generation{1};
         bool alive{false};
+        std::size_t order_pos{0};
     };
 
     friend class Stepper;
@@ -210,20 +211,26 @@ private:
     }
 
     /// @brief Stores an entity in a free slot or appends a new slot.
+    ///
+    /// The entity becomes the newest registration, so it is visited last by the
+    /// next update pass even when it recycled the slot of an older entity.
     /// @param entity Entity to store.
     /// @return Identifier assigned to the stored entity.
     EntityId insert(std::shared_ptr<EntityBase> entity) {
+        std::size_t index = 0;
         if (free_slots_.empty()) {
-            const std::size_t index = slots_.size();
-            slots_.push_back(Slot{std::move(entity), 1U, true});
-            ++entity_count_;
-            return make_id(index, 1U);
+            index = slots_.size();
+            slots_.push_back(Slot{std::move(entity), 1U, true, 0U});
+        } else {
+            index = free_slots_.back();
+            free_slots_.pop_back();
+            Slot& recycled = slots_[index];
+            recycled.entity = std::move(entity);
+            recycled.alive = true;
         }
-        const std::size_t index = free_slots_.back();
-        free_slots_.pop_back();
         Slot& slot = slots_[index];
-        slot.entity = std::move(entity);
-        slot.alive = true;
+        slot.order_pos = order_.size();
+        order_.push_back(index);
         ++entity_count_;
         return make_id(index, slot.generation);
     }
@@ -237,6 +244,13 @@ private:
             if (slot.generation == 0U) {
                 slot.generation = 1U;
             }
+            // Drop the slot from the registration order in O(1) by moving the
+            // last entry into the freed position.
+            const std::size_t position = slot.order_pos;
+            const std::size_t moved = order_.back();
+            order_[position] = moved;
+            slots_[moved].order_pos = position;
+            order_.pop_back();
             free_slots_.push_back(index);
         }
         pending_.clear();
@@ -279,6 +293,7 @@ private:
     }
 
     std::vector<Slot> slots_{};
+    std::vector<std::size_t> order_{};
     std::vector<std::size_t> free_slots_{};
     std::vector<std::size_t> pending_{};
     EventBus events_{};

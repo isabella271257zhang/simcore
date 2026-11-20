@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
 namespace {
 
 constexpr double kEpsilon = 1e-9;
@@ -61,4 +63,29 @@ TEST(StepperTest, ExplicitStepsAccumulate) {
 
     EXPECT_EQ(probe->updates, 2);
     EXPECT_NEAR(stepper.elapsed(), 0.75, kEpsilon);
+}
+
+// T1 (continued): update() runs in registration order, so an entity that
+// recycles the slot of a despawned one is still updated after the entities
+// that were registered before it.
+TEST(StepperTest, UpdateFollowsRegistrationOrder) {
+    simcore::Registry registry;
+    simcore::Stepper stepper(registry);
+    std::vector<int> visited;
+
+    struct Recorder {
+        std::vector<int>* log{nullptr};
+        int id{0};
+        void update(double) { log->push_back(id); }
+    };
+
+    registry.spawn<Recorder>(Recorder{&visited, 1});
+    auto second = registry.spawn<Recorder>(Recorder{&visited, 2});
+    registry.spawn<Recorder>(Recorder{&visited, 3});
+    registry.despawn(second);
+    registry.spawn<Recorder>(Recorder{&visited, 4});
+
+    stepper.step(0.1);
+
+    EXPECT_EQ(visited, (std::vector<int>{1, 3, 4}));
 }
