@@ -33,9 +33,12 @@ void Stepper::step(double dt) {
     }
     registry_->begin_iteration();
     try {
-        const std::size_t count = registry_->slots_.size();
-        for (std::size_t index = 0; index < count; ++index) {
-            const Registry::Slot& slot = registry_->slots_[index];
+        // Walk the registry's registration order rather than its slot storage:
+        // a slot recycled by spawn() after a despawn() must not make a newer
+        // entity update before an older one.
+        const std::size_t count = registry_->order_.size();
+        for (std::size_t position = 0; position < count; ++position) {
+            const Registry::Slot& slot = registry_->slots_[registry_->order_[position]];
             if (!slot.alive) {
                 continue;
             }
@@ -46,6 +49,7 @@ void Stepper::step(double dt) {
         throw;
     }
     registry_->end_iteration();
+    registry_->events().dispatch();
     elapsed_ += dt;
 }
 

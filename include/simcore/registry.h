@@ -10,6 +10,7 @@
 
 #include <simcore/entity.h>
 #include <simcore/entity_handle.h>
+#include <simcore/event_bus.h>
 
 namespace simcore {
 
@@ -25,6 +26,10 @@ class Stepper;
 /// unrelated types can coexist in one registry. Destruction requested with
 /// despawn() is deferred until the current update pass or view traversal has
 /// finished, which keeps in-flight iteration valid.
+///
+/// A registry also owns an EventBus (see events()) for typed publish/subscribe
+/// communication between entities; a Stepper delivers queued events at the end
+/// of each step.
 ///
 /// @note A registry is not thread-safe; all access must happen on one thread.
 ///
@@ -154,11 +159,26 @@ public:
     /// @return Number of entities not yet despawned.
     [[nodiscard]] std::size_t entity_count() const noexcept { return entity_count_; }
 
+    /// @brief Accesses the registry's event bus.
+    ///
+    /// The bus lets entities and user code publish typed events and subscribe to
+    /// them. Queued events are delivered by Stepper::step() at the end of each
+    /// step, or earlier by calling EventBus::dispatch() directly.
+    ///
+    /// @return Reference to the registry's event bus.
+    ///
+    /// @code
+    /// registry.events().subscribe<Hit>([](const Hit& hit) { apply(hit); });
+    /// registry.events().publish(Hit{7});
+    /// @endcode
+    [[nodiscard]] EventBus& events() noexcept { return events_; }
+
 private:
     struct Slot {
         std::shared_ptr<EntityBase> entity{};
         std::uint32_t generation{1};
         bool alive{false};
+        std::size_t order_pos{0};
     };
 
     friend class Stepper;
@@ -191,20 +211,26 @@ private:
     }
 
     /// @brief Stores an entity in a free slot or appends a new slot.
+    ///
+    /// The entity becomes the newest registration, so it is visited last by the
+    /// next update pass even when it recycled the slot of an older entity.
     /// @param entity Entity to store.
     /// @return Identifier assigned to the stored entity.
     EntityId insert(std::shared_ptr<EntityBase> entity) {
+        std::size_t index = 0;
         if (free_slots_.empty()) {
-            const std::size_t index = slots_.size();
-            slots_.push_back(Slot{std::move(entity), 1U, true});
-            ++entity_count_;
-            return make_id(index, 1U);
+            index = slots_.size();
+            slots_.push_back(Slot{std::move(entity), 1U, true, 0U});
+        } else {
+            index = free_slots_.back();
+            free_slots_.pop_back();
+            Slot& recycled = slots_[index];
+            recycled.entity = std::move(entity);
+            recycled.alive = true;
         }
-        const std::size_t index = free_slots_.back();
-        free_slots_.pop_back();
         Slot& slot = slots_[index];
-        slot.entity = std::move(entity);
-        slot.alive = true;
+        slot.order_pos = order_.size();
+        order_.push_back(index);
         ++entity_count_;
         return make_id(index, slot.generation);
     }
@@ -218,6 +244,13 @@ private:
             if (slot.generation == 0U) {
                 slot.generation = 1U;
             }
+            // Drop the slot from the registration order in O(1) by moving the
+            // last entry into the freed position.
+            const std::size_t position = slot.order_pos;
+            const std::size_t moved = order_.back();
+            order_[position] = moved;
+            slots_[moved].order_pos = position;
+            order_.pop_back();
             free_slots_.push_back(index);
         }
         pending_.clear();
@@ -260,8 +293,10 @@ private:
     }
 
     std::vector<Slot> slots_{};
+    std::vector<std::size_t> order_{};
     std::vector<std::size_t> free_slots_{};
     std::vector<std::size_t> pending_{};
+    EventBus events_{};
     std::size_t entity_count_{0};
     std::size_t iteration_depth_{0};
 };
