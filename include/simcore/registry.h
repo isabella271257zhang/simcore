@@ -101,6 +101,24 @@ public:
         return EntityHandle<T>{};
     }
 
+    /// @brief Constructs an entity with an explicit update priority.
+    ///
+    /// Lower numbers run first; equal priorities run in registration order.
+    /// Ordinary spawn() calls use priority zero. The priority affects Stepper
+    /// updates; views continue to iterate in storage order.
+    ///
+    /// @tparam T Concrete entity type; must satisfy simcore::Entity.
+    /// @tparam Args Constructor argument types.
+    /// @param priority Update priority, including negative values.
+    /// @param args Arguments forwarded to T's constructor.
+    /// @return Typed handle to the new entity.
+    template <class T, class... Args>
+    EntityHandle<T> spawn_with_priority(int priority, Args&&... args) {
+        auto handle = spawn<T>(std::forward<Args>(args)...);
+        slots_[index_of(handle.id_)].priority = priority;
+        return handle;
+    }
+
     /// @brief Requests destruction of an entity.
     ///
     /// The entity stops being visible to view() and entity_count() immediately,
@@ -159,6 +177,8 @@ private:
         std::shared_ptr<EntityBase> entity{};
         std::uint32_t generation{1};
         bool alive{false};
+        int priority{0};
+        std::uint64_t registration_order{0};
     };
 
     friend class Stepper;
@@ -196,7 +216,8 @@ private:
     EntityId insert(std::shared_ptr<EntityBase> entity) {
         if (free_slots_.empty()) {
             const std::size_t index = slots_.size();
-            slots_.push_back(Slot{std::move(entity), 1U, true});
+            slots_.push_back(Slot{std::move(entity), 1U, true, 0, next_registration_order_});
+            ++next_registration_order_;
             ++entity_count_;
             return make_id(index, 1U);
         }
@@ -205,6 +226,8 @@ private:
         Slot& slot = slots_[index];
         slot.entity = std::move(entity);
         slot.alive = true;
+        slot.priority = 0;
+        slot.registration_order = next_registration_order_++;
         ++entity_count_;
         return make_id(index, slot.generation);
     }
@@ -264,6 +287,7 @@ private:
     std::vector<std::size_t> pending_{};
     std::size_t entity_count_{0};
     std::size_t iteration_depth_{0};
+    std::uint64_t next_registration_order_{0};
 };
 
 }  // namespace simcore
