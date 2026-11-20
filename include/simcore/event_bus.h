@@ -6,6 +6,7 @@
 #include <memory>
 #include <type_traits>
 #include <typeindex>
+#include <typeinfo>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -149,7 +150,7 @@ public:
     template <class T>
     void publish(T event) {
         auto payload = std::make_shared<T>(std::move(event));
-        pending_.push_back(PendingEvent{std::type_index(typeid(T)), std::move(payload),
+        pending_.push_back(PendingEvent{std::move(payload),
                                         [](EventBus& bus, const void* data) {
                                             bus.deliver<T>(*static_cast<const T*>(data));
                                         }});
@@ -171,8 +172,13 @@ public:
         std::size_t index = 0;
         try {
             for (; index < count; ++index) {
+                // Read the delivery routine and payload out of the queue before
+                // invoking it: a listener may publish(), which can reallocate
+                // pending_ and invalidate any reference into it.
                 const PendingEvent& pending = pending_[index];
-                pending.deliver(*this, pending.payload.get());
+                void (*const deliver_fn)(EventBus&, const void*) = pending.deliver;
+                const void* const payload = pending.payload.get();
+                deliver_fn(*this, payload);
             }
         } catch (...) {
             pending_.erase(pending_.begin(), pending_.begin() + static_cast<std::ptrdiff_t>(index));
@@ -186,11 +192,8 @@ public:
     }
 
 private:
-    /// @brief One queued event: its type, its storage, and its delivery routine.
+    /// @brief One queued event: its storage and its delivery routine.
     struct PendingEvent {
-        /// @brief Runtime type of the queued event.
-        std::type_index type{typeid(void)};
-
         /// @brief Type-erased, owned copy of the queued event.
         std::shared_ptr<void> payload{};
 
