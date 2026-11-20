@@ -46,6 +46,7 @@ void Stepper::step(double dt) {
         throw;
     }
     registry_->end_iteration();
+    registry_->events().dispatch();
     elapsed_ += dt;
 }
 

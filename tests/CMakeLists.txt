@@ -23,7 +23,7 @@ if(NOT GTest_FOUND)
     FetchContent_MakeAvailable(googletest)
 endif()
 
-add_executable(simcore_tests registry_test.cpp stepper_test.cpp)
+add_executable(simcore_tests registry_test.cpp stepper_test.cpp event_bus_test.cpp)
 target_link_libraries(simcore_tests PRIVATE simcore::simcore GTest::gtest_main)
 target_compile_features(simcore_tests PRIVATE cxx_std_20)
 set_target_properties(simcore_tests PROPERTIES CXX_EXTENSIONS OFF)

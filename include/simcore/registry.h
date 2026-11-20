@@ -10,6 +10,7 @@
 
 #include <simcore/entity.h>
 #include <simcore/entity_handle.h>
+#include <simcore/event_bus.h>
 
 namespace simcore {
 
@@ -25,6 +26,10 @@ class Stepper;
 /// unrelated types can coexist in one registry. Destruction requested with
 /// despawn() is deferred until the current update pass or view traversal has
 /// finished, which keeps in-flight iteration valid.
+///
+/// A registry also owns an EventBus (see events()) for typed publish/subscribe
+/// communication between entities; a Stepper delivers queued events at the end
+/// of each step.
 ///
 /// @note A registry is not thread-safe; all access must happen on one thread.
 ///
@@ -154,6 +159,20 @@ public:
     /// @return Number of entities not yet despawned.
     [[nodiscard]] std::size_t entity_count() const noexcept { return entity_count_; }
 
+    /// @brief Accesses the registry's event bus.
+    ///
+    /// The bus lets entities and user code publish typed events and subscribe to
+    /// them. Queued events are delivered by Stepper::step() at the end of each
+    /// step, or earlier by calling EventBus::dispatch() directly.
+    ///
+    /// @return Reference to the registry's event bus.
+    ///
+    /// @code
+    /// registry.events().subscribe<Hit>([](const Hit& hit) { apply(hit); });
+    /// registry.events().publish(Hit{7});
+    /// @endcode
+    [[nodiscard]] EventBus& events() noexcept { return events_; }
+
 private:
     struct Slot {
         std::shared_ptr<EntityBase> entity{};
@@ -262,6 +281,7 @@ private:
     std::vector<Slot> slots_{};
     std::vector<std::size_t> free_slots_{};
     std::vector<std::size_t> pending_{};
+    EventBus events_{};
     std::size_t entity_count_{0};
     std::size_t iteration_depth_{0};
 };

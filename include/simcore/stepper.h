@@ -7,7 +7,9 @@ namespace simcore {
 /// @brief Drives a Registry forward in simulated time.
 ///
 /// The stepper owns no entities. It calls update(dt) on every live entity in
-/// registration order.
+/// registration order. After each step it dispatches the registry's queued
+/// events (see Registry::events()), so events published during an update pass
+/// are delivered once the whole pass has finished.
 ///
 /// @note A stepper is not thread-safe; drive a registry from one thread only.
 ///
